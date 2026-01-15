@@ -26,6 +26,16 @@ const defaultOptions = {
   },
 }
 
+const findAllNodes = (node, predicate, results = []) => {
+  if (predicate(node)) results.push(node)
+  if (node.childNodes) {
+    for (const child of node.childNodes) {
+      findAllNodes(child, predicate, results)
+    }
+  }
+  return results
+}
+
 /**
  * @param {import('@vituum/vite-plugin-juice/types').PluginUserConfig} pluginOptions
  * @returns import('vite').Plugin
@@ -46,18 +56,22 @@ const plugin = (pluginOptions = {}) => {
       handler: async (html, { filename, bundle, server }) => {
         const filePath = relative(resolvedConfig.root, filename)
         const paths = pluginOptions.paths
-        let extraCss = ''
+        let transformedCss = ''
 
         if (paths.length === 0 || paths.filter(path => filePath.startsWith(relative(resolvedConfig.root, normalizePath(path)))).length === 0) {
           return html
         }
 
         const document = parse5.parse(html)
-        // @ts-ignore
-        const headNodes = document.childNodes[1].childNodes[0].childNodes
-        const headLinks = headNodes.filter(({ nodeName, attrs }) => nodeName === 'link' && attrs.filter(({ name, value }) => name === 'rel' && value === 'stylesheet'))
 
-        for (const link of headLinks) {
+        const styleLinks = findAllNodes(document, n =>
+          n.nodeName === 'link'
+          && n.attrs?.some(a => a.name === 'rel' && a.value === 'stylesheet')
+          && !n.attrs?.some(a => a.name === 'data-vite-css-inline' && a.value === 'ignore'),
+        )
+
+        for (const link of styleLinks) {
+          const parent = link.parentNode
           const href = link.attrs.filter(({ name }) => name === 'href')[0].value
 
           if (href && !href.startsWith('http')) {
@@ -67,21 +81,21 @@ const plugin = (pluginOptions = {}) => {
               }).catch(error => pluginError(error, server, name))
 
               if (resultCss?.code) {
-                extraCss += resultCss?.code
+                transformedCss += resultCss?.code
               }
             }
             else {
               const bundledCss = bundle[href.startsWith('/') ? href.slice(1) : href]?.source
 
               if (bundledCss) {
-                extraCss += bundledCss
+                transformedCss += bundledCss
               }
               else {
                 throw new TypeError(`${href} doesn't exists in bundle`)
               }
             }
 
-            headNodes.splice(headNodes.indexOf(link), 1)
+            parent.childNodes.splice(parent.childNodes.indexOf(link), 1)
           }
 
           html = parse5.serialize(document)
@@ -93,10 +107,15 @@ const plugin = (pluginOptions = {}) => {
           html = html.replaceAll('<table', '<table border="0" cellpadding="0" cellspacing="0"')
         }
 
-        if (extraCss) {
-          const postcssResult = postcss([postcssGlobalData(pluginOptions.postcss.globalData), postcssCustomProperties(pluginOptions.postcss.customProperties)]).process(extraCss)
+        if (transformedCss) {
+          const processedCss = postcss(
+            [
+              postcssGlobalData(pluginOptions.postcss.globalData),
+              postcssCustomProperties(pluginOptions.postcss.customProperties),
+            ],
+          ).process(transformedCss)
 
-          html = html.replace('</head>', `<style>${postcssResult}</style></head>`)
+          html = html.replace('</head>', `<style>${processedCss}</style></head>`)
         }
 
         return inline(html, pluginOptions.options)
