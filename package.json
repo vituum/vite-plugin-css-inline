@@ -5,17 +5,18 @@
   "main": "index.js",
   "types": "types/index.d.ts",
   "scripts": {
+    "lint": "npm run eslint && npm run tsc",
     "tsc": "tsc",
     "eslint": "eslint '**/*.js' --fix",
     "publish-next": "npm publish --tag next"
   },
   "dependencies": {
-    "@css-inline/css-inline": "^0.19.1",
+    "@css-inline/css-inline": "^0.19",
     "@csstools/postcss-global-data": "^4.0",
     "parse5": "^8.0",
     "postcss": "^8.5",
     "postcss-custom-properties": "^15.0",
-    "vituum": "^2.0.0-next.7"
+    "vituum": "^2.0.0-next.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.39",

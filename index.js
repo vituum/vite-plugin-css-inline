@@ -20,12 +20,19 @@ const defaultOptions = {
     customProperties: {
       preserve: false,
     },
+    plugins: [],
   },
   options: {
     keepAtRules: true,
   },
 }
 
+/**
+ * @param {Object} node
+ * @param {Function} predicate
+ * @param {Array} [results=[]]
+ * @returns {Array}
+ */
 const findAllNodes = (node, predicate, results = []) => {
   if (predicate(node)) results.push(node)
   if (node.childNodes) {
@@ -48,6 +55,7 @@ const plugin = (pluginOptions = {}) => {
   return {
     name,
     enforce: 'post',
+    /**  @param {import('vite').ResolvedConfig} config */
     configResolved(config) {
       resolvedConfig = config
     },
@@ -112,8 +120,9 @@ const plugin = (pluginOptions = {}) => {
             [
               postcssGlobalData(pluginOptions.postcss.globalData),
               postcssCustomProperties(pluginOptions.postcss.customProperties),
+              ...pluginOptions.postcss.plugins,
             ],
-          ).process(transformedCss)
+          ).process(transformedCss, pluginOptions.postcss.processOptions)
 
           html = html.replace('</head>', `<style>${processedCss}</style></head>`)
         }
