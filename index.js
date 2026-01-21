@@ -1,6 +1,5 @@
 import postcss from 'postcss'
 import postcssCustomProperties from 'postcss-custom-properties'
-import postcssGlobalData from '@csstools/postcss-global-data'
 import { relative } from 'path'
 import { inline } from '@css-inline/css-inline'
 import * as parse5 from 'parse5'
@@ -16,7 +15,6 @@ const defaultOptions = {
   tables: true,
   doctype: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
   postcss: {
-    globalData: {},
     customProperties: {
       preserve: false,
     },
@@ -119,7 +117,6 @@ const plugin = (pluginOptions = {}) => {
         if (transformedCss) {
           const processedCss = postcss(
             [
-              postcssGlobalData(pluginOptions.postcss.globalData),
               postcssCustomProperties(pluginOptions.postcss.customProperties),
               ...pluginOptions.postcss.plugins,
             ],
