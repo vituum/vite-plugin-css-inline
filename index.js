@@ -122,7 +122,16 @@ const plugin = (pluginOptions = {}) => {
             ],
           ).process(transformedCss, pluginOptions.postcss.processOptions)
 
-          html = html.replace('</head>', `<style>${processedCss}</style></head>`)
+          html = html.replace('</head>', `
+            <style>
+                ${
+                  pluginOptions.postcss.customProperties?.preserve === false
+                    ? processedCss.css.replace(/\s*--[\w-]+\s*:\s*[^;]*;/g, '')
+                    : processedCss.css
+                }
+            </style>
+            </head>
+          `)
         }
 
         return inline(html, pluginOptions.options)
