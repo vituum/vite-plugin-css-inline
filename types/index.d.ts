@@ -3,7 +3,6 @@ export interface PluginUserConfig {
     tables?: boolean
     doctype?: string
     postcss?: {
-        customProperties?: import('postcss-custom-properties').pluginOptions
         processOptions?: import('postcss').ProcessOptions
         plugins?: import('postcss').AcceptedPlugin[]
     }

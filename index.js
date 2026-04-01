@@ -1,5 +1,4 @@
 import postcss from 'postcss'
-import postcssCustomProperties from 'postcss-custom-properties'
 import { relative } from 'path'
 import { inline } from '@css-inline/css-inline'
 import * as parse5 from 'parse5'
@@ -15,9 +14,6 @@ const defaultOptions = {
   tables: true,
   doctype: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
   postcss: {
-    customProperties: {
-      preserve: false,
-    },
     plugins: [],
   },
   options: {
@@ -114,25 +110,20 @@ const plugin = (pluginOptions = {}) => {
           html = html.replaceAll('<table', '<table border="0" cellpadding="0" cellspacing="0"')
         }
 
-        if (transformedCss) {
+        if (transformedCss && pluginOptions.postcss.plugins.length > 0) {
           const processedCss = postcss(
             [
-              postcssCustomProperties(pluginOptions.postcss.customProperties),
               ...pluginOptions.postcss.plugins,
             ],
           ).process(transformedCss, pluginOptions.postcss.processOptions)
 
-          html = html.replace('</head>', `
-            <style>
-                ${
-                  pluginOptions.postcss.customProperties?.preserve === false
-                    ? processedCss.css.replace(/\s*--[\w-]+\s*:\s*[^;]*;/g, '')
-                    : processedCss.css
-                }
-            </style>
-            </head>
-          `)
+          transformedCss = processedCss.css
         }
+
+        html = html.replace('</head>', `
+          <style>${transformedCss}</style>
+          </head>
+        `)
 
         return inline(html, pluginOptions.options)
       },
